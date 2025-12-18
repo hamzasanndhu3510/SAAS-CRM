@@ -1,0 +1,8 @@
+{
+  "name": "Copy of PakCRM Pro - Multi-Tenant SaaS",
+  "description": "A high-performance, multi-tenant CRM designed for the Pakistani market with WhatsApp integration, pipeline management, and AI-powered lead scoring.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
