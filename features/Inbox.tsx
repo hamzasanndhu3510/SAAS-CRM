@@ -11,7 +11,8 @@ import {
   MessageSquare,
   PlusCircle
 } from 'lucide-react';
-import { analyzeLeadConversation } from './AIAnalysisService';
+// Fixed casing for import to match the standard AiAnalysisService.ts
+import { analyzeLeadConversation } from './AiAnalysisService';
 import { Message, AiAnalysis, Lead } from '../types';
 import { DataService } from '../services/DataService';
 import { Link } from 'react-router-dom';

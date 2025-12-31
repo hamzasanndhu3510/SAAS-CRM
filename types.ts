@@ -7,6 +7,8 @@ export interface AiAnalysis {
   summary: string;
   next_action: string;
   key_points: string[];
+  closing_probability?: number; // Estimated chance of closing after first reply
+  personalized_email?: string;  // AI generated email template
 }
 
 export interface User {
