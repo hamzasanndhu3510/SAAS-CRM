@@ -11,6 +11,7 @@ import {
   Calendar,
   Zap
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const data = [
@@ -45,7 +46,6 @@ const StatCard = ({ title, value, subtext, icon: Icon, trend, color }: any) => (
   </div>
 );
 
-// Fix: Use regular function and import Zap to resolve type errors
 const Dashboard = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -59,9 +59,12 @@ const Dashboard = () => {
             <Calendar size={16} />
             <span>Last 7 Days</span>
           </div>
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md hover:bg-indigo-700 transition-colors">
+          <Link 
+            to="/pipeline" 
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md hover:bg-indigo-700 transition-colors flex items-center"
+          >
             + New Lead
-          </button>
+          </Link>
         </div>
       </div>
 

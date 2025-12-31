@@ -1,6 +1,14 @@
 
 export type TenantId = string;
 
+export interface AiAnalysis {
+  score: number;
+  sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+  summary: string;
+  next_action: string;
+  key_points: string[];
+}
+
 export interface User {
   id: string;
   name: string;
@@ -17,7 +25,8 @@ export interface Lead {
   stage: 'NEW' | 'CONTACTED' | 'PROPOSAL' | 'WON' | 'LOST';
   tenant_id: TenantId;
   created_at: string;
-  ai_score?: number; // Calculated via Gemini
+  ai_score?: number; 
+  ai_analysis?: AiAnalysis;
 }
 
 export interface Message {
