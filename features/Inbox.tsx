@@ -11,7 +11,7 @@ import {
   MessageSquare,
   PlusCircle
 } from 'lucide-react';
-// Fixed casing for import to match the standard AiAnalysisService.ts
+// Fixed casing for import to match the standardized AiAnalysisService.ts to resolve compilation error
 import { analyzeLeadConversation } from './AiAnalysisService';
 import { Message, AiAnalysis, Lead } from '../types';
 import { DataService } from '../services/DataService';

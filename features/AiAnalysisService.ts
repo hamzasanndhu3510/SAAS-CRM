@@ -2,28 +2,30 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiAnalysis, Message, Lead } from "../types";
 
-/**
- * Creates a fresh instance of the Gemini API client.
- */
+// Always use a named parameter for apiKey.
 const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Enhanced AI Analysis: Scores lead and generates a personalized email.
- * Uses gemini-3-pro-preview for complex reasoning and content generation.
+ * Uses gemini-3-pro-preview to evaluate the lead and generate a high-converting personalized outreach.
+ * Optimized for the Pakistan Real Estate Market context.
  */
 export const scoreLeadProfile = async (lead: Partial<Lead>): Promise<AiAnalysis> => {
   const ai = getAiClient();
   const prompt = `
-    Evaluate this real estate lead from Pakistan:
-    Name: ${lead.name}
-    Source: ${lead.source}
-    Estimated Value: PKR ${lead.value}
+    Role: Senior Sales Strategist for Pakistan's Premier Real Estate CRM.
+    Target Market: Lahore, Karachi, Islamabad.
+    Lead Context:
+    - Name: ${lead.name}
+    - Channel: ${lead.source}
+    - Potential Value: PKR ${lead.value}
     
-    Task:
-    1. Provide a conversion score (0-100).
-    2. Estimate the 'Closing Probability' (0-100) assuming they have just replied to our first email.
-    3. Write a highly personalized, professional email template to send to this client to build rapport.
-    4. Provide a summary and next steps.
+    Instructions:
+    1. Assess Conversion Potential (0-100) based on value and channel.
+    2. Analyze Sentiment (POSITIVE, NEUTRAL, NEGATIVE).
+    3. Calculate Probability of Closing (0-100) if a high-quality response is sent now.
+    4. Draft a sophisticated, professional outreach template (WhatsApp/Email style). Use "Salaam" if appropriate. Mention they reached out via ${lead.source}.
+    5. Summarize the lead potential in one punchy sentence.
+    6. List 3 tactical key points for the agent to follow.
   `;
 
   try {
@@ -35,44 +37,56 @@ export const scoreLeadProfile = async (lead: Partial<Lead>): Promise<AiAnalysis>
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            score: { type: Type.NUMBER },
-            sentiment: { type: Type.STRING },
-            summary: { type: Type.STRING },
-            key_points: { type: Type.ARRAY, items: { type: Type.STRING } },
-            next_action: { type: Type.STRING },
-            closing_probability: { type: Type.NUMBER, description: 'Probability of closing assuming first reply received' },
-            personalized_email: { type: Type.STRING, description: 'The drafted email template' }
+            score: { type: Type.NUMBER, description: 'Overall conversion score out of 100' },
+            sentiment: { type: Type.STRING, description: 'Must be POSITIVE, NEUTRAL, or NEGATIVE' },
+            summary: { type: Type.STRING, description: 'Executive summary of the lead' },
+            key_points: { 
+              type: Type.ARRAY, 
+              items: { type: Type.STRING },
+              description: '3 tactical points'
+            },
+            next_action: { type: Type.STRING, description: 'Recommended immediate next step' },
+            closing_probability: { type: Type.NUMBER, description: 'Percentage probability of winning' },
+            personalized_email: { type: Type.STRING, description: 'The drafted outreach copy' }
           },
           required: ["score", "sentiment", "summary", "key_points", "next_action", "closing_probability", "personalized_email"]
         }
       }
     });
 
-    // Directly access text property as per guidelines
     const text = response.text;
-    if (!text) throw new Error("Empty response");
+    if (!text) throw new Error("AI returned empty content");
+    
     return JSON.parse(text.trim()) as AiAnalysis;
   } catch (e) {
-    console.error("AI Scoring Error:", e);
+    console.error("Gemini Scoring Engine Failure:", e);
+    // Graceful fallback for the UI
     return {
-      score: 50,
+      score: 45,
       sentiment: 'NEUTRAL',
-      summary: 'Standard lead analysis applied.',
-      key_points: ['Review contact details'],
-      next_action: 'Send introductory message',
-      closing_probability: 30,
-      personalized_email: `Dear ${lead.name},\n\nThank you for reaching out via ${lead.source}. We have several properties matching your interest. Looking forward to discussing this further.\n\nBest regards,\nPakCRM Team`
+      summary: 'Automated baseline analysis generated.',
+      key_points: ['Attempt immediate contact', 'Confirm budget availability', 'Verify property preference'],
+      next_action: 'Initial Call Attempt',
+      closing_probability: 15,
+      personalized_email: `Hi ${lead.name},\n\nThank you for reaching out via ${lead.source}. We have received your inquiry regarding property investment. When is a good time to connect and share more details?\n\nRegards,\nTeam PakCRM`
     };
   }
 };
 
 /**
- * Analyze existing conversation history.
+ * Performs a deep dive into conversation history using Gemini 3 Pro to detect intent shifts.
  */
 export const analyzeLeadConversation = async (messages: Message[], leadName: string): Promise<AiAnalysis> => {
   const ai = getAiClient();
-  const conversationText = messages.map(m => `${m.type}: ${m.content}`).join('\n');
-  const prompt = `Analyze conversation with ${leadName}:\n${conversationText}`;
+  const conversationLog = messages.map(m => `[${m.type}] ${m.content}`).join('\n');
+  
+  const prompt = `
+    Analyze this conversation history with client ${leadName}:
+    ${conversationLog}
+    
+    Determine if the client is exhibiting high buying intent or just browsing.
+    Calculate current closing probability based on the most recent interactions.
+  `;
 
   try {
     const response = await ai.models.generateContent({
@@ -95,20 +109,25 @@ export const analyzeLeadConversation = async (messages: Message[], leadName: str
         }
       }
     });
-    // Directly access text property as per guidelines
+    
     const text = response.text;
-    return JSON.parse(text || '{}') as AiAnalysis;
+    if (!text) throw new Error("No analysis received");
+    return JSON.parse(text.trim()) as AiAnalysis;
   } catch (e) {
+    console.warn("Conversation analysis fallback to static profile score.");
     return scoreLeadProfile({ name: leadName });
   }
 };
 
 /**
- * Fast parse lead from raw text.
+ * Intelligent parser that extracts structured lead data from messy raw text strings.
  */
-export const parseLeadFromText = async (rawText: string): Promise<Partial<Lead>> => {
+export const parseLeadFromText = async (rawInput: string): Promise<Partial<Lead>> => {
   const ai = getAiClient();
-  const prompt = `Extract lead info from: "${rawText}"`;
+  const prompt = `
+    Extract structured real estate lead info from this raw input: "${rawInput}"
+    Focus on: Name, Phone Number, Budget/Value (PKR), and the Inquiry Source.
+  `;
 
   try {
     const response = await ai.models.generateContent({
@@ -122,17 +141,18 @@ export const parseLeadFromText = async (rawText: string): Promise<Partial<Lead>>
             name: { type: Type.STRING },
             phone: { type: Type.STRING },
             value: { type: Type.NUMBER },
-            source: { type: Type.STRING },
-            ai_score: { type: Type.NUMBER }
+            source: { type: Type.STRING }
           },
-          required: ["name", "phone", "value", "source", "ai_score"]
+          required: ["name", "phone", "value", "source"]
         }
       }
     });
-    // Directly access text property as per guidelines
+    
     const text = response.text;
-    return JSON.parse(text || '{}');
+    if (!text) return {};
+    return JSON.parse(text.trim());
   } catch (e) {
+    console.error("AI Parser Failed:", e);
     return {};
   }
 };
