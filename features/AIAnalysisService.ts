@@ -31,28 +31,30 @@ export const analyzeLeadConversation = async (messages: Message[], leadName: str
     5. Next action.
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-pro-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          score: { type: Type.NUMBER, description: 'Conversion probability (0-100)' },
-          sentiment: { type: Type.STRING, description: 'POSITIVE, NEUTRAL, or NEGATIVE' },
-          summary: { type: Type.STRING },
-          key_points: { type: Type.ARRAY, items: { type: Type.STRING } },
-          next_action: { type: Type.STRING }
-        },
-        required: ["score", "sentiment", "summary", "key_points", "next_action"],
-        propertyOrdering: ["score", "sentiment", "summary", "key_points", "next_action"]
-      }
-    }
-  });
-
   try {
-    return JSON.parse(response.text || '{}') as AiAnalysis;
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER, description: 'Conversion probability (0-100)' },
+            sentiment: { type: Type.STRING, description: 'One of: POSITIVE, NEUTRAL, NEGATIVE' },
+            summary: { type: Type.STRING },
+            key_points: { type: Type.ARRAY, items: { type: Type.STRING } },
+            next_action: { type: Type.STRING }
+          },
+          required: ["score", "sentiment", "summary", "key_points", "next_action"],
+          propertyOrdering: ["score", "sentiment", "summary", "key_points", "next_action"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Empty response");
+    return JSON.parse(text.trim()) as AiAnalysis;
   } catch (e) {
     console.error("Failed to parse AI response:", e);
     return {
@@ -81,27 +83,30 @@ export const scoreLeadProfile = async (lead: Partial<Lead>): Promise<AiAnalysis>
     Return a detailed analysis including reasoning for the score.
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-pro-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          score: { type: Type.NUMBER },
-          sentiment: { type: Type.STRING },
-          summary: { type: Type.STRING },
-          key_points: { type: Type.ARRAY, items: { type: Type.STRING } },
-          next_action: { type: Type.STRING }
-        },
-        required: ["score", "sentiment", "summary", "key_points", "next_action"]
-      }
-    }
-  });
-
   try {
-    return JSON.parse(response.text || '{}') as AiAnalysis;
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER },
+            sentiment: { type: Type.STRING, description: 'One of: POSITIVE, NEUTRAL, NEGATIVE' },
+            summary: { type: Type.STRING },
+            key_points: { type: Type.ARRAY, items: { type: Type.STRING } },
+            next_action: { type: Type.STRING }
+          },
+          required: ["score", "sentiment", "summary", "key_points", "next_action"],
+          propertyOrdering: ["score", "sentiment", "summary", "key_points", "next_action"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Empty response");
+    return JSON.parse(text.trim()) as AiAnalysis;
   } catch (e) {
     return {
       score: 50,
@@ -130,27 +135,30 @@ export const parseLeadFromText = async (rawText: string): Promise<Partial<Lead>>
     5. An initial conversion score (0-100) based on the intent shown in the text.
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-pro-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          phone: { type: Type.STRING },
-          value: { type: Type.NUMBER },
-          source: { type: Type.STRING },
-          ai_score: { type: Type.NUMBER }
-        },
-        required: ["name", "phone", "value", "source", "ai_score"]
-      }
-    }
-  });
-
   try {
-    return JSON.parse(response.text || '{}');
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            name: { type: Type.STRING },
+            phone: { type: Type.STRING },
+            value: { type: Type.NUMBER },
+            source: { type: Type.STRING, description: 'One of: WHATSAPP, FACEBOOK, WALK_IN, WEBSITE' },
+            ai_score: { type: Type.NUMBER }
+          },
+          required: ["name", "phone", "value", "source", "ai_score"],
+          propertyOrdering: ["name", "phone", "value", "source", "ai_score"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Empty response");
+    return JSON.parse(text.trim());
   } catch (e) {
     return {};
   }
